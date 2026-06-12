@@ -1,0 +1,31 @@
+id,url,title,price,address,zip_code,municipality,property_type,subtype,transaction_type,living_area_m2,plot_area_m2,garden,garden_area_m2,terrace,terrace_area_m2,bedrooms,bathrooms,epc_score,epc_kwh_m2,construction_year,condition,heating_type,parking_indoor,parking_outdoor,elevator,furnished,flood_zone,cadastral_income,agency,first_seen,scrape_date
+21640759,https://www.immoweb.be/en/classified/21640759,Country_cottage for rent in Gent,1100,Broekstraat 29,9030,Gent,house,country_cottage,for-rent,,800,True,500,,,5,1,B,,,GOOD,GAS,2,2,False,,NON_FLOOD_ZONE,,PRIVATE,2026-06-12,2026-06-12
+21640579,https://www.immoweb.be/en/classified/21640579,House for rent in Gent,1100,Kikvorsstraat 134,9000,Gent,house,house,for-rent,110,90,,,True,20,2,1,,,,GOOD,,,2,,,NON_FLOOD_ZONE,,PRIVATE,2026-06-12,2026-06-12
+21638745,https://www.immoweb.be/en/classified/21638745,House for rent in Gent,995,Dendermondsesteenweg 67,9000,Gent,house,house,for-rent,85,43,,,True,8,2,1,C,230,,AS_NEW,,,,False,False,NON_FLOOD_ZONE,,VICUS,2026-06-12,2026-06-12
+21625599,https://www.immoweb.be/en/classified/21625599,House for rent in GENT,970,Hazelaarstraat 4,9000,GENT,house,house,for-rent,80,0,,,,,2,,,,,,,,,,,,,CENTURY 21 Woonkantoor,2026-06-12,2026-06-12
+21638531,https://www.immoweb.be/en/classified/21638531,House for rent in Gent,1250,Geldmunt 56 58,9000,Gent,house,house,for-rent,,0,,,,,3,,,,,,,,,,,,,I-MOOV,2026-06-12,2026-06-12
+21638517,https://www.immoweb.be/en/classified/21638517,House for rent in Gent Ledeberg,1450,Hoveniersstraat 97,9050,Gent Ledeberg,house,house,for-rent,175,60,,,,,4,,,,,,,,,,,,,Immo Da Vinci,2026-06-12,2026-06-12
+21638265,https://www.immoweb.be/en/classified/21638265,Bungalow for rent in Gent,1350,Magergoedhof 3,9041,Gent,house,bungalow,for-rent,245,829,,,,,2,,,,,,,,,,,,,ERA Rental,2026-06-12,2026-06-12
+21637642,https://www.immoweb.be/en/classified/21637642,House for rent in Wondelgem,1395,Liefbilkstraat 11,9032,Wondelgem,house,house,for-rent,,0,,,,,3,,,,,,,,,,,,,Bouw Francis Bostoen,2026-06-12,2026-06-12
+21637417,https://www.immoweb.be/en/classified/21637417,House for rent in Gent,1475,Frank Baurstraat 19,9000,Gent,house,house,for-rent,,0,,,,,4,,,,,,,,,,,,,PRIVATE,2026-06-12,2026-06-12
+21621575,https://www.immoweb.be/en/classified/21621575,House for rent in Gent,1375,Henri Mortierstraat 6,9050,Gent,house,house,for-rent,135,0,,,,,4,,,,,,,,,,,,,FREGIS,2026-06-12,2026-06-12
+21637130,https://www.immoweb.be/en/classified/21637130,House for rent in Ledeberg,980,,9050,Ledeberg,house,house,for-rent,98,75,,,,,3,,,,,,,,,,,,,EDM Woonadvies,2026-06-12,2026-06-12
+21637127,https://www.immoweb.be/en/classified/21637127,House for rent in Gentbrugge,1350,Keiberg 7,9050,Gentbrugge,house,house,for-rent,,0,,,,,0,,,,,,,,,,,,,Makelaarshuys,2026-06-12,2026-06-12
+21636866,https://www.immoweb.be/en/classified/21636866,House for rent in Gent,1400,Olijfstraat 78,9000,Gent,house,house,for-rent,,0,,,,,3,,,,,,,,,,,,,PRIVATE,2026-06-12,2026-06-12
+21636239,https://www.immoweb.be/en/classified/21636239,House for rent in Gent,1250,Achterstraat 192,9040,Gent,house,house,for-rent,,107,,,,,3,,,,,,,,,,,,,PRIVATE,2026-06-12,2026-06-12
+21635977,https://www.immoweb.be/en/classified/21635977,House for rent in Gent,1475,Wazenaarstraat 11,9050,Gent,house,house,for-rent,196,0,,,,,3,,,,,,,,,,,,,Vastgoed De Vos Evergem,2026-06-12,2026-06-12
+21635596,https://www.immoweb.be/en/classified/21635596,House for rent in Gent,1700,Maaltebruggestraat 286,9000,Gent,house,house,for-rent,137,232,,,,,3,,,,,,,,,,,,,PRIVATE,2026-06-12,2026-06-12
+21634977,https://www.immoweb.be/en/classified/21634977,House for rent in Gent,860,Ijskelderstraat 39,9000,Gent,house,house,for-rent,70,0,,,,,2,,,,,,,,,,,,,PRIVATE,2026-06-12,2026-06-12
+21633579,https://www.immoweb.be/en/classified/21633579,House for rent in Sint-Amandsberg,850,Jean Béthunestraat 100,9040,Sint-Amandsberg,house,house,for-rent,50,0,,,,,1,,,,,,,,,,,,,Oranjeberg,2026-06-12,2026-06-12
+21632437,https://www.immoweb.be/en/classified/21632437,House for rent in Gent,1500,Leo Baekelandstraat 23,9000,Gent,house,house,for-rent,,200,,,,,3,,,,,,,,,,,,,VDS Vastgoed,2026-06-12,2026-06-12
+21631532,https://www.immoweb.be/en/classified/21631532,House for rent in Gent,1200,Stokerijstraat 35,9000,Gent,house,house,for-rent,,0,,,,,3,,,,,,,,,,,,,PRIVATE,2026-06-12,2026-06-12
+21604122,https://www.immoweb.be/en/classified/21604122,House for rent in Gent,570,Coupure Links 239,9000,Gent,house,house,for-rent,,0,,,,,4,,,,,,,,,,,,,PRIVATE,2026-06-12,2026-06-12
+21629752,https://www.immoweb.be/en/classified/21629752,House for rent in Gent,2150,Ballenstraat 5,9000,Gent,house,house,for-rent,140,140,,,,,2,,,,,,,,,,,,,Sofimmo bvba,2026-06-12,2026-06-12
+21628042,https://www.immoweb.be/en/classified/21628042,House for rent in Gent,1550,Jakob Heremansstraat 1,9000,Gent,house,house,for-rent,185,55,,,,,3,,,,,,,,,,,,,PRIVATE,2026-06-12,2026-06-12
+21627699,https://www.immoweb.be/en/classified/21627699,Exceptional_property for rent in Gent,4500,Graslei 5,9000,Gent,house,exceptional_property,for-rent,225,0,,,,,3,,,,,,,,,,,,,Moyabell Real Estate,2026-06-12,2026-06-12
+21627220,https://www.immoweb.be/en/classified/21627220,Villa for rent in Gent,2400,Krijzeltand 19,9051,Gent,house,villa,for-rent,188,810,,,,,5,,,,,,,,,,,,,Immo Da Vinci,2026-06-12,2026-06-12
+21625643,https://www.immoweb.be/en/classified/21625643,House for rent in Gent,1500,Nadine Crappéstraat 37,9000,Gent,house,house,for-rent,172,134,,,,,4,,,,,,,,,,,,,TREVI Gent,2026-06-12,2026-06-12
+21448770,https://www.immoweb.be/en/classified/21448770,House for rent in Gent,1350,Olifantstraat 18,9000,Gent,house,house,for-rent,,0,,,,,2,,,,,,,,,,,,,PRIVATE,2026-06-12,2026-06-12
+21624626,https://www.immoweb.be/en/classified/21624626,House for rent in Gent,940,Azaleastraat 4,9040,Gent,house,house,for-rent,100,45,,,,,2,,,,,,,,,,,,,PRIVATE,2026-06-12,2026-06-12
+21624596,https://www.immoweb.be/en/classified/21624596,House for rent in Oostakker,1500,Bredestraat 123,9041,Oostakker,house,house,for-rent,168,550,,,,,4,,,,,,,,,,,,,PRIVATE,2026-06-12,2026-06-12
+21624543,https://www.immoweb.be/en/classified/21624543,House for rent in Gent,1350,Octaaf Soudanstraat 22,9051,Gent,house,house,for-rent,137,0,,,,,3,,,,,,,,,,,,,PRIVATE,2026-06-12,2026-06-12
