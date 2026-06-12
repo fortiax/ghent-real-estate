@@ -53,12 +53,17 @@ USER_AGENTS = [
 
 FIELDNAMES = [
     "id", "url", "title", "price", "address", "zip_code", "municipality",
+    "latitude", "longitude",
     "property_type", "subtype", "transaction_type",
     "living_area_m2", "plot_area_m2", "garden", "garden_area_m2",
     "terrace", "terrace_area_m2", "bedrooms", "bathrooms",
     "epc_score", "epc_kwh_m2", "construction_year", "condition",
     "heating_type", "parking_indoor", "parking_outdoor", "elevator",
     "furnished", "flood_zone", "cadastral_income", "agency",
+    "status", "old_price", "listed_date", "last_modified",
+    "view_count", "bookmark_count", "floor", "floor_count", "facade_count",
+    "double_glazing", "monthly_costs", "heritage_protected",
+    "renovation_obligation", "photo_count", "photo_url",
     "first_seen", "scrape_date",
 ]
 
@@ -240,6 +245,8 @@ def parse_search_item(item, transaction_type):
         "address": address,
         "zip_code": loc.get("postalCode"),
         "municipality": locality,
+        "latitude": loc.get("latitude"),
+        "longitude": loc.get("longitude"),
         "property_type": (prop.get("type") or "").lower() or None,
         "subtype": subtype,
         "transaction_type": transaction_type,
@@ -249,6 +256,14 @@ def parse_search_item(item, transaction_type):
         "epc_score": deep_get(item, "transaction", "certificates",
                               "epcScore"),
         "agency": item.get("customerName"),
+        "status": deep_get(item, "flags", "main"),
+        "old_price": (deep_get(item, "transaction", "sale", "oldPrice")
+                      or deep_get(item, "price", "oldValue")),
+        "listed_date": deep_get(item, "publication", "creationDate"),
+        "last_modified": deep_get(item, "publication",
+                                  "lastModificationDate"),
+        "photo_count": len(deep_get(item, "media", "pictures") or []) or None,
+        "photo_url": deep_get(item, "media", "pictures", 0, "largeUrl"),
     }
 
 
@@ -283,6 +298,8 @@ def parse_detail_page(html, row):
         "address": address or row.get("address"),
         "zip_code": loc.get("postalCode") or row.get("zip_code"),
         "municipality": loc.get("locality") or row.get("municipality"),
+        "latitude": loc.get("latitude"),
+        "longitude": loc.get("longitude"),
         "subtype": (prop.get("subtype") or "").lower()
                    or row.get("subtype"),
         "living_area_m2": prop.get("netHabitableSurface")
@@ -309,6 +326,21 @@ def parse_detail_page(html, row):
         "flood_zone": flood,
         "cadastral_income": deep_get(trans, "sale", "cadastralIncome"),
         "agency": deep_get(c, "customers", 0, "name"),
+        "old_price": deep_get(trans, "sale", "oldPrice"),
+        "listed_date": deep_get(c, "publication", "creationDate"),
+        "last_modified": deep_get(c, "publication", "lastModificationDate"),
+        "view_count": deep_get(c, "statistics", "viewCount"),
+        "bookmark_count": deep_get(c, "statistics", "bookmarkCount"),
+        "floor": loc.get("floor"),
+        "floor_count": deep_get(prop, "building", "floorCount"),
+        "facade_count": deep_get(prop, "building", "facadeCount"),
+        "double_glazing": deep_get(prop, "energy", "hasDoubleGlazing"),
+        "monthly_costs": prop.get("monthlyCosts"),
+        "heritage_protected": deep_get(prop, "building",
+                                       "isHeritageProtected"),
+        "renovation_obligation": deep_get(trans, "certificates",
+                                          "renovationObligation"),
+        "photo_count": len(deep_get(c, "media", "pictures") or []) or None,
     }
     for key, value in updates.items():
         if value is not None:
@@ -338,7 +370,7 @@ def save_csv(csv_path, rows):
 
 
 def scrape_combo(fetcher, property_type, transaction_type, csv_path,
-                 max_pages=None, max_details=None):
+                 max_pages=None, max_details=None, refresh_details=False):
     today = date.today().isoformat()
     existing = load_existing(csv_path)
     print(f"\n=== {property_type} {transaction_type} "
@@ -363,8 +395,20 @@ def scrape_combo(fetcher, property_type, transaction_type, csv_path,
                     merged[key] = value
             merged["scrape_date"] = today
             merged.setdefault("first_seen", today)
+            # Optionally re-fetch details for rows scraped before new
+            # detail-level columns existed.
+            if (refresh_details and not merged.get("listed_date")
+                    and (max_details is None or detail_count < max_details)):
+                try:
+                    html = fetcher.get(merged["url"])
+                    merged = parse_detail_page(html, merged)
+                    detail_count += 1
+                except BlockedError as err:
+                    print(f"  [detail] {pid}: {err} — keeping existing data")
             existing[pid] = merged
             updated_count += 1
+            if updated_count % 50 == 0:
+                save_csv(csv_path, existing)  # checkpoint long refresh runs
             continue
 
         # New listing: fetch the detail page for the full data set.
@@ -394,6 +438,9 @@ def main():
                         help="limit search pages per combo (for testing)")
     parser.add_argument("--max-details", type=int, default=None,
                         help="limit detail-page fetches per combo")
+    parser.add_argument("--refresh-details", action="store_true",
+                        help="re-fetch detail pages for known listings "
+                             "missing detail-level columns")
     parser.add_argument("--delay-min", type=float,
                         default=float(os.environ.get("SCRAPE_DELAY_MIN", 2)))
     parser.add_argument("--delay-max", type=float,
@@ -408,7 +455,8 @@ def main():
                 scrape_combo(fetcher, property_type, transaction_type,
                              DATA_DIR / filename,
                              max_pages=args.max_pages,
-                             max_details=args.max_details)
+                             max_details=args.max_details,
+                             refresh_details=args.refresh_details)
             except BlockedError as err:
                 print(f"!! {property_type} {transaction_type} failed: {err}")
                 failures.append(filename)
