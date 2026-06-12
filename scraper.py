@@ -11,6 +11,7 @@ cloudscraper and then Playwright before giving up.
 
 import argparse
 import csv
+import gzip
 import json
 import os
 import random
@@ -24,6 +25,7 @@ import requests
 
 BASE = "https://www.immoweb.be"
 DATA_DIR = Path(__file__).parent / "data"
+RAW_DIR = DATA_DIR / "raw"  # full classified JSON per listing, gzipped
 
 # Postal codes covering the 14 official deelgemeenten of Stad Gent:
 # 9000 Gent, 9030 Mariakerke, 9031 Drongen, 9032 Wondelgem,
@@ -64,7 +66,12 @@ FIELDNAMES = [
     "view_count", "bookmark_count", "floor", "floor_count", "facade_count",
     "double_glazing", "monthly_costs", "heritage_protected",
     "renovation_obligation", "photo_count", "photo_url",
-    "first_seen", "scrape_date",
+    "kitchen_type", "living_room_m2", "garden_orientation",
+    "terrace_orientation", "balcony", "attic", "basement", "fireplace",
+    "swimming_pool", "air_conditioning", "solar_panels", "heat_pump",
+    "carbon_emission", "toilets", "first_occupation", "vat_applicable",
+    "public_sale", "life_annuity",
+    "detail_scraped", "first_seen", "scrape_date",
 ]
 
 
@@ -280,6 +287,18 @@ def parse_detail_page(html, row):
     except json.JSONDecodeError:
         return row
 
+    # Archive the complete raw JSON so no data point is ever lost, even
+    # ones not flattened into CSV columns (descriptions, photo lists, ...).
+    pid = row.get("id") or c.get("id")
+    if pid:
+        try:
+            RAW_DIR.mkdir(parents=True, exist_ok=True)
+            with gzip.open(RAW_DIR / f"{pid}.json.gz", "wt",
+                           encoding="utf-8") as fh:
+                json.dump(c, fh, ensure_ascii=False)
+        except OSError as err:
+            print(f"  [raw] could not save {pid}: {err}")
+
     prop = c.get("property") or {}
     trans = c.get("transaction") or {}
     loc = prop.get("location") or {}
@@ -341,10 +360,29 @@ def parse_detail_page(html, row):
         "renovation_obligation": deep_get(trans, "certificates",
                                           "renovationObligation"),
         "photo_count": len(deep_get(c, "media", "pictures") or []) or None,
+        "kitchen_type": deep_get(prop, "kitchen", "type"),
+        "living_room_m2": deep_get(prop, "livingRoom", "surface"),
+        "garden_orientation": prop.get("gardenOrientation"),
+        "terrace_orientation": prop.get("terraceOrientation"),
+        "balcony": prop.get("hasBalcony"),
+        "attic": prop.get("hasAttic"),
+        "basement": prop.get("hasBasement"),
+        "fireplace": prop.get("fireplaceExists"),
+        "swimming_pool": prop.get("hasSwimmingPool"),
+        "air_conditioning": prop.get("hasAirConditioning"),
+        "solar_panels": deep_get(prop, "energy", "hasPhotovoltaicPanels"),
+        "heat_pump": deep_get(prop, "energy", "hasHeatPump"),
+        "carbon_emission": deep_get(trans, "certificates", "carbonEmission"),
+        "toilets": prop.get("toiletCount"),
+        "first_occupation": prop.get("isFirstOccupation"),
+        "vat_applicable": deep_get(trans, "sale", "isSubjectToVat"),
+        "public_sale": deep_get(c, "flags", "isPublicSale"),
+        "life_annuity": deep_get(c, "flags", "isLifeAnnuitySale"),
     }
     for key, value in updates.items():
         if value is not None:
             row[key] = value
+    row["detail_scraped"] = date.today().isoformat()
     return row
 
 
@@ -397,7 +435,7 @@ def scrape_combo(fetcher, property_type, transaction_type, csv_path,
             merged.setdefault("first_seen", today)
             # Optionally re-fetch details for rows scraped before new
             # detail-level columns existed.
-            if (refresh_details and not merged.get("listed_date")
+            if (refresh_details and not merged.get("detail_scraped")
                     and (max_details is None or detail_count < max_details)):
                 try:
                     html = fetcher.get(merged["url"])

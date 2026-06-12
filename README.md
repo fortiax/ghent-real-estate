@@ -21,6 +21,10 @@ Zwijnaarde (postal codes 9000, 9030–9032, 9040–9042, 9050–9052).
   furnished, flood zone, cadastral income, agency, and more.
 - **Upserts by listing ID**: new listings are appended, existing ones are
   refreshed (with a new `scrape_date`); historical rows are never deleted.
+- **Complete raw capture**: every detail-page fetch also archives the full
+  `window.classified` JSON (~200 fields, including free-text descriptions
+  and photo lists) to `data/raw/{id}.json.gz`, so fields not flattened into
+  the CSVs can always be extracted later.
 - **Polite scraping**: random 2–5 s delay between requests and realistic
   browser User-Agent headers.
 - **Block resilience**: on HTTP 403/429, CAPTCHA pages, or empty responses it
