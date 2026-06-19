@@ -27,6 +27,13 @@ BASE = "https://www.immoweb.be"
 DATA_DIR = Path(__file__).parent / "data"
 RAW_DIR = DATA_DIR / "raw"  # full classified JSON per listing, gzipped
 
+# Append-only time series of view/bookmark counts so we can watch a
+# listing's saves (bookmarks) and views accumulate over its lifetime,
+# rather than keeping only the frozen first-scrape snapshot in the main CSVs.
+STATS_HISTORY = DATA_DIR / "stats_history.csv"
+STATS_FIELDS = ["id", "scrape_date", "property_type", "transaction_type",
+                "price", "status", "active", "view_count", "bookmark_count"]
+
 # Postal codes covering the 14 official deelgemeenten of Stad Gent:
 # 9000 Gent, 9030 Mariakerke, 9031 Drongen, 9032 Wondelgem,
 # 9040 Sint-Amandsberg, 9041 Oostakker,
@@ -408,8 +415,40 @@ def save_csv(csv_path, rows):
             writer.writerow(row)
 
 
+def append_stats_history(row, today, history_path=STATS_HISTORY):
+    """Append one time-series point if this row carries fresh counts.
+
+    Called after every detail-page fetch. No-op when neither a view nor a
+    bookmark count is present, so search-only rows don't pollute the series.
+    """
+    view = row.get("view_count")
+    book = row.get("bookmark_count")
+    if view in (None, "") and book in (None, ""):
+        return
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    new_file = not history_path.exists()
+    with open(history_path, "a", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=STATS_FIELDS,
+                                extrasaction="ignore")
+        if new_file:
+            writer.writeheader()
+        writer.writerow({
+            "id": row.get("id"),
+            "scrape_date": today,
+            "property_type": row.get("property_type"),
+            "transaction_type": row.get("transaction_type"),
+            "price": row.get("price"),
+            "status": row.get("status"),
+            "active": row.get("active", "True"),
+            "view_count": view,
+            "bookmark_count": book,
+        })
+
+
 def scrape_combo(fetcher, property_type, transaction_type, csv_path,
-                 max_pages=None, max_details=None, refresh_details=False):
+                 max_pages=None, max_details=None, refresh_details=False,
+                 refresh_stats=False, stats_budget=0,
+                 history_path=STATS_HISTORY):
     today = date.today().isoformat()
     existing = load_existing(csv_path)
     print(f"\n=== {property_type} {transaction_type} "
@@ -444,6 +483,7 @@ def scrape_combo(fetcher, property_type, transaction_type, csv_path,
                 try:
                     html = fetcher.get(merged["url"])
                     merged = parse_detail_page(html, merged)
+                    append_stats_history(merged, today, history_path)
                     detail_count += 1
                 except BlockedError as err:
                     print(f"  [detail] {pid}: {err} — keeping existing data")
@@ -458,6 +498,7 @@ def scrape_combo(fetcher, property_type, transaction_type, csv_path,
             try:
                 html = fetcher.get(row["url"])
                 row = parse_detail_page(html, row)
+                append_stats_history(row, today, history_path)
                 detail_count += 1
             except BlockedError as err:
                 print(f"  [detail] {pid}: {err} — keeping search-level data")
@@ -494,6 +535,35 @@ def scrape_combo(fetcher, property_type, transaction_type, csv_path,
               f"{prev_active} active known — skipping inactive marking "
               f"(likely a block or partial scrape)")
 
+    # Rotating stats refresh: re-fetch the detail pages of active listings to
+    # capture current view/bookmark counts as a time-series point. Counts only
+    # live on the detail page, so to see saves accumulate we must re-visit. We
+    # cap the work per run and pick the *stalest* listings first (oldest
+    # detail_scraped, never-scraped first), so the budget rotates through the
+    # whole set over several days instead of re-fetching everything daily.
+    if refresh_stats and stats_budget:
+        candidates = [
+            (pid, r) for pid, r in existing.items()
+            if r.get("active") != "False"
+            and r.get("detail_scraped") != today  # not already fetched above
+        ]
+        candidates.sort(key=lambda kv: kv[1].get("detail_scraped") or "")
+        refreshed = 0
+        for pid, r in candidates[:stats_budget]:
+            try:
+                html = fetcher.get(r["url"])
+                r = parse_detail_page(html, r)
+                append_stats_history(r, today, history_path)
+                existing[pid] = r
+                refreshed += 1
+                if refreshed % 25 == 0:
+                    save_csv(csv_path, existing)  # checkpoint long refresh
+            except BlockedError as err:
+                print(f"  [stats] {pid}: {err} — skipping")
+        if refreshed:
+            print(f"  refreshed stats for {refreshed} listings "
+                  f"({len(candidates)} stale candidates)")
+
     save_csv(csv_path, existing)
     print(f"  done: {new_count} new, {updated_count} updated, "
           f"{len(existing)} total -> {csv_path.name}")
@@ -509,11 +579,24 @@ def main():
     parser.add_argument("--refresh-details", action="store_true",
                         help="re-fetch detail pages for known listings "
                              "missing detail-level columns")
+    parser.add_argument("--refresh-stats", action="store_true",
+                        help="re-fetch detail pages of active listings to log "
+                             "current view/bookmark counts to "
+                             "data/stats_history.csv (rotating, stalest first)")
+    parser.add_argument("--stats-budget", type=int, default=300,
+                        help="max listings to refresh stats for per run, "
+                             "split evenly across the 4 combos "
+                             "(default: 300)")
     parser.add_argument("--delay-min", type=float,
                         default=float(os.environ.get("SCRAPE_DELAY_MIN", 2)))
     parser.add_argument("--delay-max", type=float,
                         default=float(os.environ.get("SCRAPE_DELAY_MAX", 5)))
     args = parser.parse_args()
+
+    # Split the per-run stats budget evenly so each combo gets a fair share of
+    # refreshes rather than the first combo consuming it all.
+    stats_per_combo = (-(-args.stats_budget // len(COMBOS))
+                       if args.refresh_stats else 0)
 
     fetcher = Fetcher(delay_min=args.delay_min, delay_max=args.delay_max)
     failures = []
@@ -524,7 +607,9 @@ def main():
                              DATA_DIR / filename,
                              max_pages=args.max_pages,
                              max_details=args.max_details,
-                             refresh_details=args.refresh_details)
+                             refresh_details=args.refresh_details,
+                             refresh_stats=args.refresh_stats,
+                             stats_budget=stats_per_combo)
             except BlockedError as err:
                 print(f"!! {property_type} {transaction_type} failed: {err}")
                 failures.append(filename)
