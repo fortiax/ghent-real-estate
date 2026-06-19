@@ -71,7 +71,8 @@ FIELDNAMES = [
     "swimming_pool", "air_conditioning", "solar_panels", "heat_pump",
     "carbon_emission", "toilets", "first_occupation", "vat_applicable",
     "public_sale", "life_annuity",
-    "detail_scraped", "first_seen", "scrape_date",
+    "detail_scraped", "first_seen", "last_seen", "active",
+    "disappeared_date", "scrape_date",
 ]
 
 
@@ -432,6 +433,9 @@ def scrape_combo(fetcher, property_type, transaction_type, csv_path,
                 if value is not None:
                     merged[key] = value
             merged["scrape_date"] = today
+            merged["last_seen"] = today
+            merged["active"] = "True"
+            merged["disappeared_date"] = ""  # reset if it had reappeared
             merged.setdefault("first_seen", today)
             # Optionally re-fetch details for rows scraped before new
             # detail-level columns existed.
@@ -458,11 +462,37 @@ def scrape_combo(fetcher, property_type, transaction_type, csv_path,
             except BlockedError as err:
                 print(f"  [detail] {pid}: {err} — keeping search-level data")
         row["first_seen"] = today
+        row["last_seen"] = today
+        row["active"] = "True"
+        row["disappeared_date"] = ""
         row["scrape_date"] = today
         existing[pid] = row
         new_count += 1
         if new_count % 25 == 0:
             save_csv(csv_path, existing)  # checkpoint long runs
+
+    # Flag listings that no longer appear in search results as inactive
+    # (sold / rented / withdrawn) instead of silently keeping them "live".
+    # Their last_seen/scrape_date are frozen at the last day they appeared,
+    # so time-on-market = last_seen - first_seen can be measured later.
+    prev_active = sum(1 for r in existing.values()
+                      if r.get("active") != "False")
+    if seen_this_run and len(seen_this_run) >= 0.5 * max(prev_active, 1):
+        gone = 0
+        for pid, r in existing.items():
+            if pid in seen_this_run or r.get("active") == "False":
+                continue
+            r["active"] = "False"
+            if not r.get("last_seen"):
+                r["last_seen"] = r.get("scrape_date") or ""
+            r["disappeared_date"] = today
+            gone += 1
+        if gone:
+            print(f"  marked {gone} listings inactive (no longer listed)")
+    else:
+        print(f"  WARNING: only {len(seen_this_run)} listings seen vs "
+              f"{prev_active} active known — skipping inactive marking "
+              f"(likely a block or partial scrape)")
 
     save_csv(csv_path, existing)
     print(f"  done: {new_count} new, {updated_count} updated, "

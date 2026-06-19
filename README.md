@@ -21,6 +21,13 @@ Zwijnaarde (postal codes 9000, 9030–9032, 9040–9042, 9050–9052).
   furnished, flood zone, cadastral income, agency, and more.
 - **Upserts by listing ID**: new listings are appended, existing ones are
   refreshed (with a new `scrape_date`); historical rows are never deleted.
+- **Lifecycle tracking**: a listing that drops out of the search results
+  (sold / rented / withdrawn) is flagged `active=False` with a
+  `disappeared_date`; its `last_seen` is frozen at the last day it appeared.
+  This makes time-on-market (`last_seen − first_seen`) and absorption
+  measurable. A safety guard skips this marking when a run sees fewer than
+  half the previously-active listings (likely a block or partial scrape), so
+  a bad scrape never mass-flags the inventory as gone.
 - **Complete raw capture**: every detail-page fetch also archives the full
   `window.classified` JSON (~200 fields, including free-text descriptions
   and photo lists) to `data/raw/{id}.json.gz`, so fields not flattened into
@@ -58,7 +65,9 @@ python scraper.py --max-pages 1 --max-details 5
 
 ## Data notes
 
-- Every row carries `first_seen` and `scrape_date` (ISO dates).
+- Every row carries `first_seen`, `last_seen`, `scrape_date` (ISO dates),
+  an `active` flag (`True`/`False`), and a `disappeared_date` for listings
+  that have left the market.
 - Prices are EUR: sale price for `for-sale` rows, monthly rent for
   `for-rent` rows.
 - Data is scraped from public Immoweb pages for personal/research use.
